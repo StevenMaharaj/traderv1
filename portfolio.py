@@ -10,5 +10,4 @@ class Position:
     price: float
     qty: float
     isBuy: bool
-    isFilled: bool
-    isOpen: bool
+    state: str
