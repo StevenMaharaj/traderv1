@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 @dataclass
 class AccountHandler(ABC):
-    apiKey: str
-    secret: str
+    # apiKey: str
+    # secret: str
 
     @abstractmethod
     def start_stream(self):
@@ -14,6 +14,6 @@ class AccountHandler(ABC):
     def connect(self):
         raise NotImplementedError("should implement connect")
 
-    @abstractmethod
-    def to_order_event():
-        raise NotImplementedError("should implement to_market_event")
+    # @abstractmethod
+    # def to_order_event():
+    #     raise NotImplementedError("should implement to_market_event")
