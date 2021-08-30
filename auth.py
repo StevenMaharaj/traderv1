@@ -26,6 +26,11 @@ class DeribtAuth(Auth):
             }
         await websocket.send(json.dumps(msg))
         res = await websocket.recv()
-        print(res)
-        return res
+        res_dict = json.loads(res)
+        try: 
+            auth_scope = res_dict['result']["scope"]
+            print(f"Authentication Successful - Scope: {auth_scope}")
+        except KeyError:
+            print(f"Authentication Unsuccessful")
+        # return res
 

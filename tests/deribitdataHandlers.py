@@ -8,7 +8,7 @@ from queue import Queue
 class TestDeribitTob(unittest.TestCase):
     def setUp(self):
         event_queue = Queue()
-        self.deribit_tob = DeribitTOB(["ETH-PERPETUAL"], event_queue)
+        self.deribit_tob = DeribitTOB(["ETH-PERPETUAL"], event_queue,is_live=False)
         self.response = json.dumps({"jsonrpc": "2.0", "method": "subscription", "params": {"channel": "quote.ETH-PERPETUAL", "data": {"timestamp": 1629968039462,
                                                                                                                                       "instrument_name": "ETH-PERPETUAL", "best_bid_price": 3107.2, "best_bid_amount": 34944.0, "best_ask_price": 3107.25, "best_ask_amount": 240.0}}})
         self.res = TobMarketEvent(exchange='deribit',

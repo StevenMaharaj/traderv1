@@ -13,10 +13,16 @@ from typing import List
 class DeribitTOB(DataHandler):
     symbols: List[str]
     event_queue: Queue
-    exchange: str = 'deribit'
+    is_live: bool
+    exchange: str = 'deribit',
 
     async def connect(self, msg):
-        async with websockets.connect('wss://www.deribit.com/ws/api/v2') as websocket:
+        if self.is_live:
+            url = 'wss://www.deribit.com/ws/api/v2'
+        else:
+            url = 'wss://test.deribit.com/ws/api/v2'
+            
+        async with websockets.connect(url) as websocket:
             await websocket.send(msg)
             response = await websocket.recv()
             while websocket.open:
