@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -46,4 +46,14 @@ class OrderEvent(Event):
     isBuy: bool
     isLimit: bool
     time_in_force: str
+
+@dataclass
+class SignalEvent(Event):
+    qty: float
+    price: float
+    isBuy: bool
+    isLimit: bool
+    time_in_force: str
+
+
 

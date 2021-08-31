@@ -4,8 +4,6 @@ from dataclasses import dataclass
 
 @dataclass
 class AccountHandler(ABC):
-    # apiKey: str
-    # secret: str
 
     @abstractmethod
     def start_stream(self):
