@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Event:
-    event_type: str
+    event_type: str 
     symbol: str
     ts: int
     exchange: str
@@ -42,10 +42,12 @@ class CandleMarketEvent(MarketEvent):
 class OrderEvent(Event):
     state: str
     qty: float
-    entry: float
+    volume: float
+    price: float
     isBuy: bool
     isLimit: bool
     time_in_force: str
+    id: str
 
 @dataclass
 class SignalEvent(Event):

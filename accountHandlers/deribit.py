@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from accountHandlers.account import AccountHandler
 import asyncio
-from typing import List
+from typing import List, Mapping
 import json
 import websockets
 import keys
@@ -10,11 +10,15 @@ from queue import Queue
 from event import OrderEvent
 
 
+# deribit_order_state_map: Mapping[str,str] = {}
+
+# Order state: "open", "filled", "rejected", "cancelled", "untriggered"
 @dataclass
 class DeribitOrder(AccountHandler):
     symbols: List[str]
     event_queue: Queue
     is_live: bool
+    
 
     async def connect(self, msg):
 
@@ -57,9 +61,10 @@ class DeribitOrder(AccountHandler):
                               symbol=temp['params']['data']['instrument_name'],
                               ts=temp['params']['data']['last_update_timestamp'],
                               state=temp['params']['data']['order_state'],
-                              
+                              volume=temp['params']['data']["amount"]/temp['params']['data']["price"],
                               qty=temp['params']['data']["amount"],
-                              entry=temp['params']['data']["price"],
+                              price=temp['params']['data']["price"],
                               isBuy=True if temp['params']['data']["direction"]=='buy' else False,
                               isLimit=True if temp['params']['data']["order_type"]=='limit' else False,
-                              time_in_force=temp['params']['data']["time_in_force"])
+                              time_in_force=temp['params']['data']["time_in_force"],
+                              id=temp['params']['data']['order_id'])

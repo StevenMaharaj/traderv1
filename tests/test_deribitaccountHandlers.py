@@ -20,10 +20,12 @@ class TestDeribitTob(unittest.TestCase):
                                 ts=1630288390359,
                                 state='cancelled',
                                 qty=10.0,
-                                entry=48434.5,
+                                price=48434.5,
+                                volume = 10.0/48434.5,
                                 isBuy=True,
                                 isLimit=True,
-                                time_in_force='immediate_or_cancel')
+                                time_in_force='immediate_or_cancel',
+                                id="6461552120")
 
     def test_to_market_event(self):
         self.assertEqual(self.deribit_order.to_order_event(
