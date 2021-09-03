@@ -38,10 +38,24 @@ class Portfolio:
     def update(self,event: Event):
         if isinstance(event,MarketEvent):
             if isinstance(event,TobMarketEvent):
-                pass
+                self.handle_TobMarketEvent(event)
         elif isinstance(event,OrderEvent):
             self.handle_OrderEvent(event)
     
+
+    def handle_TobMarketEvent(self,event: TobMarketEvent):
+        if len(self.positions) > 0:
+            mid_price = (event.AskP + event.BidP)*0.5
+
+            for id, position in self.positions.items():
+                if (position.symbol == event.symbol) and (position.exchange == event.exchange):
+                    self.positions[id].price = mid_price
+                    if self.positions[id].isBuy:
+                        self.positions[id].unrealized_profits = (mid_price - self.positions[id].price) * self.positions[id].volume
+                    else:
+                        self.positions[id].unrealized_profits = -1.0*(mid_price - self.positions[id].price) * self.positions[id].volume
+                     
+
     def handle_OrderEvent(self,event: OrderEvent):
         if event.state == "open":
             self.open_orders[event.id] = OpenOrder(
