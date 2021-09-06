@@ -69,20 +69,39 @@ class Portfolio:
                 price=event.price
             )
         elif event.state == "filled":
-            self.open_orders.pop(event.id, None)
-            self.positions[event.id] = Position(
-                symbol=event.symbol,
-                exchange=event.exchange,
-                time=datetime.fromtimestamp(event.ts/1000),
-                qty=event.qty,
-                volume=event.volume, 
-                isBuy=event.isBuy,
-                price=event.price,
-                unrealized_profits = 0.0,
-                current_price=event.price,
-                id=event.id,
-            )
-        
+            position_key: str = f"{event.symbol}-{event.exchange}"
+            is_first_filled_order = False if position_key in self.positions.keys() else True
+            if is_first_filled_order:
+                self.open_orders.pop(event.id, None)
+                self.positions[f"{event.symbol}-{event.exchange}"] = Position(
+                    symbol=event.symbol,
+                    exchange=event.exchange,
+                    time=datetime.fromtimestamp(event.ts/1000),
+                    qty=event.qty*(event.isBuy*2.0-1.0),
+                    volume=event.volume, 
+                    isBuy=event.isBuy,
+                    price=event.price,
+                    unrealized_profits = 0.0,
+                    current_price=event.price,
+                    id=event.id,
+                )
+            else:
+                update_qty: float = event.qty*(event.isBuy*2.0-1.0)
+                volume_qty: float = (event.qty/event.price)*(event.isBuy*2.0-1.0)
+                
+                if self.positions[position_key] != event.isBuy:
+                    if abs(self.positions[position_key].qty + update_qty) < 0.00000001: # reduce to zero
+                        self.positions.pop(position_key, None)
+                    else:
+                        self.positions[position_key].qty += update_qty
+                        self.positions[position_key].volume += volume_qty
+
+
+                elif (event.isBuy == self.positions[position_key].isBuy): # add to position
+                    self.positions[position_key].qty += update_qty
+                    self.positions[position_key].volume += volume_qty
+
+
         elif event.state == "cancelled":
             self.open_orders.pop(event.id)
 

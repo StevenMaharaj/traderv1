@@ -54,13 +54,7 @@ class TestPortfolioOrderEvent(unittest.TestCase):
         self.p.update(self.open_order)
         self.assertEqual(self.resopen, self.p)
 
-    def test_handle_OrderEvent_filled(self):
-        self.p.update(self.open_order)
-        self.assertEqual(self.resopen, self.p)
 
-        self.p.update(self.filled_order)
-
-        self.assertEqual(self.resfilled, self.p)
 
     def test_handle_OrderEvent_cancelled(self):
         self.p.update(self.open_order)
@@ -68,40 +62,60 @@ class TestPortfolioOrderEvent(unittest.TestCase):
         self.assertEqual(self.p, Portfolio({}, {}))
 
 
-class TestPortfolioTobMarketEvent(unittest.TestCase):
-
+class TestPortfolioOrderEventFills(unittest.TestCase):
     def setUp(self):
         self.p = Portfolio({}, {})
-        self.tob1 = TobMarketEvent(event_type='MARKET', symbol='BTC-PERPETUAL', ts=1630394748649, exchange='deribit',
-                       product_type='future', market_event_type='TOB', AskP=47325.0, AskQ=191180.0, BidP=47323.0, BidQ=2000.0)
+        self.p_empty = Portfolio({}, {})
 
-        self.tob2 = TobMarketEvent(event_type='MARKET', symbol='BTC-PERPETUAL', ts=1630394748655, exchange='deribit',
-                       product_type='future', market_event_type='TOB', AskP=47325.5, AskQ=5800.0, BidP=47323.0, BidQ=2000.0)
-        self.filled_order = OrderEvent(event_type='ORDER',
-                                exchange='deribit',
-                                product_type='future',
-                                symbol='BTC-PERPETUAL',
-                                ts=1630288390359,
-                                state='filled',
-                                qty=10.0,
-                                price=48434.5,
-                                volume=10.0/48434.5,
-                                isBuy=True,
-                                isLimit=True,
-                                time_in_force='GTC',
-                                id="6461552120")
-        # self.res1 = 
-    def test_no_position(self):
-        self.p.update(self.tob1)
-        
-        self.assertEqual(self.p,Portfolio({}, {}))
-        print()
-    
-    def test_1_position(self):
-        self.p.update(self.filled_order)
-        self.p.update(self.tob1)
-        mid_price = (self.tob1.BidP +  self.tob1.AskP)*0.5
-        self.assertEqual(self.p.positions[self.filled_order.id].price,mid_price)
+
+    def test_buy_sell(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(buy_event)
+        self.p.update(sell_event)
+        self.assertEqual(self.p, Portfolio({}, {}))
+
+    def test_sell_buy(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(sell_event)
+        self.p.update(buy_event)
+        self.assertEqual(self.p, Portfolio({}, {}))
+
+    def test_buy_buy(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(buy_event)
+        self.p.update(buy_event)
+        self.assertEqual(self.p.positions['BTC-PERPETUAL-deribit'].qty, 20.0)
+
+    def test_sell_sell(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(sell_event)
+        self.p.update(sell_event)
+        self.assertEqual(self.p.positions['BTC-PERPETUAL-deribit'].qty, -20.0)
+
+
+    def test_buy_buy_sell(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(buy_event)
+        self.p.update(buy_event)
+        self.p.update(sell_event)
+        self.assertEqual(self.p.positions['BTC-PERPETUAL-deribit'].qty, 10.0)
+
+    def test_sell_buy_sell(self):
+        buy_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897431900, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001903565377952906, price=52533.0, isBuy=True, isLimit=False, time_in_force='good_til_cancelled', id='6503574855')
+        sell_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630897433646, exchange='deribit', product_type='future', state='filled', qty=10.0, volume=0.0001961534312138955, price=50980.5, isBuy=False, isLimit=False, time_in_force='good_til_cancelled', id='6503574903')
+        self.p.update(sell_event)
+        self.p.update(buy_event)
+        self.assertEqual(self.p,self.p_empty)
+        self.p.update(sell_event)
+        self.assertEqual(self.p.positions['BTC-PERPETUAL-deribit'].qty, -10.0)
+
+
+
         
 
 if __name__ == '__main__':
