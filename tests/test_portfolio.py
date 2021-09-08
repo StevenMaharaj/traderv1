@@ -114,8 +114,10 @@ class TestPortfolioOrderEventFills(unittest.TestCase):
         self.p.update(sell_event)
         self.assertEqual(self.p.positions['BTC-PERPETUAL-deribit'].qty, -10.0)
 
-
-
+    def test_open_event(self):
+        open_event = OrderEvent(event_type='ORDER', symbol='BTC-PERPETUAL', ts=1630969321779, exchange='deribit', product_type='future', state='open', qty=10.0, volume=0.00019020627870926018, price=52574.5, isBuy=True, isLimit=True, time_in_force='good_til_cancelled', id='6507610249')
+        self.p.update(open_event)
+        self.assertEqual(self.p.positions,{})
         
 
 if __name__ == '__main__':

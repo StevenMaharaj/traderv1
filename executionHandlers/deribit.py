@@ -8,10 +8,12 @@ from websockets import WebSocketClientProtocol
 import keys
 from auth import DeribtAuth
 from queue import Queue
-from event import SignalEvent
+from event import SignalEvent, CancelSignalEvent
 import requests
 from threading import Thread
 import logging
+import numpy as np
+
 
 @dataclass
 class DeribitExecutionHandler(ExecutionHandler):
@@ -22,26 +24,40 @@ class DeribitExecutionHandler(ExecutionHandler):
         self.exchange_info: Mapping[str, dict] = self.get_exchange_info()
 
     async def execute_order(self, signal: SignalEvent, websocket: WebSocketClientProtocol):
-        params = {"instrument_name": signal.symbol,
-                  "amount": signal.qty,
-                  "type": 'limit' if signal.isLimit else 'market',
-                  "label": "traderv1"}
-        if not signal.isLimit:
+        if isinstance(signal, CancelSignalEvent):
             msg = \
-                {"jsonrpc": "2.0",
-                 "method": f"private/{'buy' if signal.isBuy else 'sell'}",
-                 "id": 5275,
-                 "params": params}
-        elif signal.isLimit:
-            params["price"] = self.price_precision(signal.price, signal.symbol)
-            tif_map: Dict[str, str] = {
-                'GTC': 'good_til_cancelled', 'FOK': 'fill_or_kill', "IOC": 'immediate_or_cancel'}
-            params['time_in_force'] = tif_map[signal.time_in_force]
-            msg = \
-                {"jsonrpc": "2.0",
-                 "method": f"private/{'buy' if signal.isBuy else 'sell'}",
-                 "id": 5275,
-                 "params": params}
+                {
+                    "jsonrpc": "2.0",
+                    "id": 4214,
+                    "method": "private/cancel",
+                    "params": {
+                        "order_id": signal.id
+                    }
+                }
+        else:
+            params = {"instrument_name": signal.symbol,
+                    "amount": signal.qty,
+                    "type": 'limit' if signal.isLimit else 'market'}
+            if not signal.isLimit:
+                msg = \
+                    {"jsonrpc": "2.0",
+                    "method": f"private/{'buy' if signal.isBuy else 'sell'}",
+                    "id": 5275,
+                    "params": params}
+            elif signal.isLimit:
+
+                # params["price"] = self.price_precision(signal.price, signal.symbol)
+                params["price"] = signal.price
+                params["post_only"] = True
+                tif_map: Dict[str, str] = {
+                    'GTC': 'good_til_cancelled', 'FOK': 'fill_or_kill', "IOC": 'immediate_or_cancel'}
+                params['time_in_force'] = tif_map[signal.time_in_force]
+                msg = \
+                    {"jsonrpc": "2.0",
+                    "method": f"private/{'buy' if signal.isBuy else 'sell'}",
+                    "id": 5275,
+                    "params": params}
+
         await websocket.send(json.dumps(msg))
         _ = await websocket.recv()
 
@@ -61,6 +77,7 @@ class DeribitExecutionHandler(ExecutionHandler):
 
             while websocket.open:
                 signal: SignalEvent = self.signal_event_queue.get()
+                logging.info(signal)
                 await self.execute_order(signal, websocket)
 
     def start_stream(self):
@@ -74,9 +91,6 @@ class DeribitExecutionHandler(ExecutionHandler):
                 logging.exception("exception")
 
                 print("WebSocket Closed reconnecting")
-
-    
-
 
     def get_exchange_info(self) -> Mapping[str, dict]:
         if self.is_live:
@@ -100,24 +114,25 @@ class DeribitExecutionHandler(ExecutionHandler):
 
     def price_precision(self, raw_price: float, symbol: str) -> float:
 
-        min_trade_amount = self.exchange_info[symbol]['min_trade_amount']
-        if min_trade_amount < 1:
-            raise NotImplementedError("should implement <1 case")
-        else:
-            return int(raw_price)
+        tick_size = self.exchange_info[symbol]['tick_size']
+        return int(raw_price//tick_size) * tick_size
+
+    def qty_precision():
+        pass
+
 
 async def manage_heartbeat(websocket: WebSocketClientProtocol):
-        msg = \
-            {
-                "jsonrpc": "2.0",
-                "id": 9098,
-                "method": "public/set_heartbeat",
-                "params": {
-                    "interval": 10
-                }
+    msg = \
+        {
+            "jsonrpc": "2.0",
+            "id": 9098,
+            "method": "public/set_heartbeat",
+            "params": {
+                "interval": 10
             }
-            
-        msg_continuing = \
+        }
+
+    msg_continuing = \
         {
             "jsonrpc": "2.0",
             "id": 9098,
@@ -126,15 +141,15 @@ async def manage_heartbeat(websocket: WebSocketClientProtocol):
                 "interval": 10
             }
         }
-        await websocket.send(json.dumps(msg))
-        _ = await websocket.recv()
+    await websocket.send(json.dumps(msg))
+    _ = await websocket.recv()
 
-        while True:
-            res = await websocket.recv()
-            res_dict = json.loads(res)
-            try:
-                if res_dict["params"]['type'] == "test_request":
-                    print(res_dict)
-                    websocket.send(json.dumps(msg_continuing))
-            except KeyError:
-                continue
+    while True:
+        res = await websocket.recv()
+        res_dict = json.loads(res)
+        try:
+            if res_dict["params"]['type'] == "test_request":
+                print(res_dict)
+                websocket.send(json.dumps(msg_continuing))
+        except KeyError:
+            continue

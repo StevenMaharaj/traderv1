@@ -11,7 +11,7 @@ from time import sleep
 import argparse
 import logging
 import os
-from Strategies.scalper import Scalper
+from Strategies.ScalperDeribit import scalper_deribit 
 from portfolio import Portfolio
 
 
@@ -41,8 +41,8 @@ signal_event_queue = Queue()
 
 portfolio = Portfolio({}, {})
 
-deribit_scalper = Scalper(event_queue, signal_event_queue,
-                  working_orders=1, portfolio=portfolio,
-                  exchange='deribit',symbols=["BTC-PERPETUAL"], is_live=is_live)
+deribit_scalper = scalper_deribit.Scalper(event_queue, signal_event_queue,
+                  working_orders=5, portfolio=portfolio,
+                  exchange='deribit',symbols=["BTC-PERPETUAL"], is_live=is_live,order_dist=20)
 
 deribit_scalper.run()

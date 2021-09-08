@@ -55,6 +55,8 @@ class DeribitOrder(AccountHandler):
 
     def to_order_event(self, response: str) -> OrderEvent:
         temp = json.loads(response)
+        # print(temp['params']['data'])
+
         return OrderEvent(event_type='ORDER',
                               exchange='deribit',
                               product_type='future',

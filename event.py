@@ -58,4 +58,10 @@ class SignalEvent(Event):
     time_in_force: str
 
 
+@dataclass
+class CancelSignalEvent(SignalEvent):
+    id: str
+
+
+
 

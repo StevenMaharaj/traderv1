@@ -16,8 +16,8 @@ class TestDeribitEH(unittest.TestCase):
         self.assertEqual(self.ei['ETH-PERPETUAL']['settlement_period'],'perpetual')
 
     def test_price_precision(self):
-        min_trade_amount = self.ei[self.symbol]['min_trade_amount']
-        self.assertEqual(min_trade_amount,10)
+        res = self.deh.price_precision(53438.51,self.symbol)
+        self.assertEqual(res,53438.5)
         
 
 

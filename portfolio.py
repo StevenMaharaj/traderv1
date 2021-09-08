@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Mapping
+from typing import Mapping, Tuple
 from event import *
 
 
@@ -35,6 +35,17 @@ class Portfolio:
     positions: Mapping[str,Position]
     open_orders: Mapping[str,OpenOrder]
 
+
+    def get_n_bid_ask(self) -> Tuple[int]:
+        n_bids = 0
+        n_asks = 0
+        for _,oo in self.open_orders.items():
+            if oo.isBuy:
+                n_bids +=1
+            else:
+                n_asks +=1
+        return (n_bids,n_asks)
+
     def update(self,event: Event):
         if isinstance(event,MarketEvent):
             if isinstance(event,TobMarketEvent):
@@ -68,11 +79,12 @@ class Portfolio:
                 id=event.id,
                 price=event.price
             )
+
         elif event.state == "filled":
             position_key: str = f"{event.symbol}-{event.exchange}"
             is_first_filled_order = False if position_key in self.positions.keys() else True
+            self.open_orders.pop(event.id, None)
             if is_first_filled_order:
-                self.open_orders.pop(event.id, None)
                 self.positions[f"{event.symbol}-{event.exchange}"] = Position(
                     symbol=event.symbol,
                     exchange=event.exchange,
@@ -101,8 +113,7 @@ class Portfolio:
                     self.positions[position_key].qty += update_qty
                     self.positions[position_key].volume += volume_qty
 
-
-        elif event.state == "cancelled":
+        elif event.state == 'cancelled':
             self.open_orders.pop(event.id)
 
 
